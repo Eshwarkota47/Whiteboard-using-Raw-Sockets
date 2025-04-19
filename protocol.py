@@ -84,7 +84,8 @@ def handle_incoming_data(data, canvas, append_chat, user_list, handle_file_callb
                     "filepath": filepath
                 })
 
-            append_chat(f"{username} uploaded: {filename}")
+            # ❌ REMOVED this line to avoid duplicate:
+            # append_chat(f"{username} uploaded: {filename}")
 
         except Exception as e:
             print("[!] Error handling file:", e)
