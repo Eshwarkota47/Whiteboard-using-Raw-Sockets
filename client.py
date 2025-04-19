@@ -93,9 +93,13 @@ class WhiteboardClient:
                 with open(path, "rb") as f:
                     data = f.read()
                 self.sock.send(protocol.encode_file(path, data, self.username))
-                self.display_download_button(os.path.basename(path), data, self.username)
+                self.append_chat(f"You uploaded: {os.path.basename(path)}")
             except Exception as e:
                 messagebox.showerror("File Error", str(e))
+
+    def handle_file(self, file_info):
+        if file_info["username"] != self.username:
+            self.display_download_button(file_info["filename"], file_info["data"], file_info["username"])
 
     def display_download_button(self, filename, data, username):
         def download():
@@ -159,11 +163,6 @@ class WhiteboardClient:
         self.chat_box.insert("end", message + "\n")
         self.chat_box.configure(state='disabled')
         self.chat_box.see("end")
-
-    def handle_file(self, file_info):
-        if file_info["username"] == self.username:
-            return  # Already handled locally during upload
-        self.display_download_button(file_info["filename"], file_info["data"], file_info["username"])
 
     def set_tool(self, tool_name):
         self.tool = tool_name
