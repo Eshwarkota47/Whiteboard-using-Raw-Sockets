@@ -48,7 +48,6 @@ class WhiteboardClient:
         self.user_list.grid(row=0, column=10, rowspan=20, padx=5, pady=5, sticky="ns")
         tk.Label(self.root, text="Online Users").grid(row=20, column=10)
 
-        # Tools
         tk.Button(self.root, text="Draw", command=lambda: self.set_tool("draw")).grid(row=0, column=11)
         tk.Button(self.root, text="Rect", command=lambda: self.set_tool("rect")).grid(row=1, column=11)
         tk.Button(self.root, text="Circle", command=lambda: self.set_tool("circle")).grid(row=2, column=11)
@@ -84,6 +83,7 @@ class WhiteboardClient:
         if msg:
             full_msg = f"{self.username}: {msg}"
             self.sock.send(protocol.encode_chat(full_msg))
+            self.append_chat(full_msg)
             self.chat_entry.delete(0, "end")
 
     def upload_file(self):
@@ -93,8 +93,25 @@ class WhiteboardClient:
                 with open(path, "rb") as f:
                     data = f.read()
                 self.sock.send(protocol.encode_file(path, data, self.username))
+                self.display_download_button(os.path.basename(path), data, self.username)
             except Exception as e:
                 messagebox.showerror("File Error", str(e))
+
+    def display_download_button(self, filename, data, username):
+        def download():
+            save_path = filedialog.asksaveasfilename(initialfile=filename)
+            if save_path:
+                with open(save_path, "wb") as f:
+                    f.write(data)
+                messagebox.showinfo("Download", f"File saved to {save_path}")
+
+        self.chat_box.configure(state='normal')
+        self.chat_box.insert("end", f"{username} uploaded: {filename}  ")
+        btn = tk.Button(self.chat_box, text="Download", command=download, padx=5, pady=1)
+        self.chat_box.window_create("end", window=btn)
+        self.chat_box.insert("end", "\n")
+        self.chat_box.configure(state='disabled')
+        self.chat_box.see("end")
 
     def on_click(self, event):
         self.last_x, self.last_y = event.x, event.y
@@ -144,20 +161,9 @@ class WhiteboardClient:
         self.chat_box.see("end")
 
     def handle_file(self, file_info):
-        def download():
-            save_path = filedialog.asksaveasfilename(initialfile=file_info["filename"])
-            if save_path:
-                with open(save_path, "wb") as f:
-                    f.write(file_info["data"])
-                messagebox.showinfo("Download", f"File saved to {save_path}")
-
-        self.chat_box.configure(state='normal')
-        self.chat_box.insert("end", f"{file_info['username']} uploaded: {file_info['filename']}  ")
-        btn = tk.Button(self.chat_box, text="Download", command=download, padx=5, pady=1)
-        self.chat_box.window_create("end", window=btn)
-        self.chat_box.insert("end", "\n")
-        self.chat_box.configure(state='disabled')
-        self.chat_box.see("end")
+        if file_info["username"] == self.username:
+            return  # Already handled locally during upload
+        self.display_download_button(file_info["filename"], file_info["data"], file_info["username"])
 
     def set_tool(self, tool_name):
         self.tool = tool_name
